@@ -61,10 +61,8 @@ import com.taobao.diamond.configinfo.ConfigureInfomation;
 import com.taobao.diamond.md5.MD5;
 import com.taobao.diamond.mockserver.MockServer;
 import com.taobao.diamond.utils.AppNameUtils;
-import com.taobao.diamond.utils.DiamondStatLog;
 import com.taobao.diamond.utils.LoggerInit;
 import com.taobao.diamond.utils.SimpleCache;
-import com.taobao.diamond.utils.StatConstants;
 import com.taobao.pushit.client.NotifyListener;
 import com.taobao.pushit.client.PushitClient;
 
@@ -812,9 +810,6 @@ class DefaultDiamondSubscriber implements DiamondSubscriber {
 
                 case SC_OK: {
                     String result = getSuccess(dataId, group, cacheData, httpMethod);
-                    stated = true;
-                    DiamondStatLog.addStatValue2(StatConstants.APP_NAME, StatConstants.STAT_AVERAGE_HTTP_GET_OK,
-                        dataId, group, System.currentTimeMillis() - start);
                     // 统计dataid的变化
                     recordDataIdChange(dataId, group);
                     return result;
@@ -822,23 +817,16 @@ class DefaultDiamondSubscriber implements DiamondSubscriber {
 
                 case SC_NOT_MODIFIED: {
                     String result = getNotModified(dataId, cacheData, httpMethod);
-                    stated = true;
-                    DiamondStatLog.addStatValue2(StatConstants.APP_NAME,
-                        StatConstants.STAT_AVERAGE_HTTP_GET_NOT_MODIFIED, dataId, group, System.currentTimeMillis()
-                                - start);
                     return result;
                 }
 
                 case SC_NOT_FOUND: {
                     log.warn("没有找到DataID为:" + dataId + "对应的配置信息");
-                    DiamondStatLog.addStat(StatConstants.APP_NAME, appName, dataId + "-" + group, response);
-                    // add by zxq清空snapshot中的对应dataId的数据
                     this.snapshotConfigInfoProcessor.removeSnapshot(dataId, group);
                     return null;
                 }
 
                 case SC_SERVICE_UNAVAILABLE: {
-                    DiamondStatLog.addStat(StatConstants.APP_NAME, appName, dataId + "-" + group, response);
                     // 当前服务器不可用，切换
                     rotateToNextDomain();
                 }
@@ -846,7 +834,6 @@ class DefaultDiamondSubscriber implements DiamondSubscriber {
 
                 default: {
                     log.warn("HTTP State: " + httpStatus + ":" + httpClient.getState());
-                    DiamondStatLog.addStat(StatConstants.APP_NAME, appName, dataId + "-" + group, response);
                     rotateToNextDomain();
                 }
                 }
@@ -866,10 +853,6 @@ class DefaultDiamondSubscriber implements DiamondSubscriber {
             }
             finally {
                 httpMethod.releaseConnection();
-                if (!stated) {
-                    DiamondStatLog.addStatValue2(StatConstants.APP_NAME, StatConstants.STAT_AVERAGE_HTTP_GET_OTHER,
-                        dataId, group, System.currentTimeMillis() - start);
-                }
             }
         }
         throw new RuntimeException("获取ConfigureInfomation超时, DataID" + dataId + ", Group为：" + group + ",超时时间为："
@@ -1063,9 +1046,6 @@ class DefaultDiamondSubscriber implements DiamondSubscriber {
                 case SC_OK: {
 
                     Set<String> result = getUpdateDataIds(postMethod);
-                    // 统计平均check时间
-                    DiamondStatLog.addStatValue2(StatConstants.APP_NAME, StatConstants.STAT_AVERAGE_HTTP_POST_CHECK,
-                        System.currentTimeMillis() - start);
                     return result;
                 }
 
