@@ -29,10 +29,6 @@
             <artifactId>easymock</artifactId>
         </dependency>
         <dependency>
-            <groupId>com.taobao.common.monitor</groupId>
-            <artifactId>common-monitor</artifactId>
-        </dependency>
-        <dependency>
             <groupId>org.easymock</groupId>
             <artifactId>easymockclassextension</artifactId>
         </dependency>
