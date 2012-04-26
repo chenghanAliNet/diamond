@@ -16,7 +16,6 @@
 		<module>diamond-client</module>
 		<module>diamond-server</module>
 		<module>diamond-utils</module>
-		<module>diamond-sdk</module>
 	</modules>
 
 	<build>
@@ -103,12 +102,6 @@
 				<artifactId>diamond-client</artifactId>
 				<version>${project.version}</version>
 			</dependency>
-			<dependency>
-				<groupId>${pom.groupId}</groupId>
-				<artifactId>diamond-sdk</artifactId>
-				<version>${project.version}</version>
-			</dependency>
-
 			<dependency>
 				<groupId>${pom.groupId}</groupId>
 				<artifactId>diamond-utils</artifactId>
