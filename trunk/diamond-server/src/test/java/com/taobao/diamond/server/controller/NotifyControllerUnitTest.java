@@ -13,9 +13,7 @@ import java.io.InputStreamReader;
 import org.junit.Before;
 import org.junit.Test;
 
-import com.taobao.diamond.common.Constants;
 import com.taobao.diamond.domain.ConfigInfo;
-import com.taobao.diamond.domain.GroupInfo;
 import com.taobao.diamond.server.utils.DiamondUtils;
 
 public class NotifyControllerUnitTest extends AbstractControllerUnitTest {
