@@ -22,7 +22,6 @@ import org.springframework.stereotype.Component;
 
 import com.taobao.diamond.server.utils.SessionHolder;
 
-
 /**
  * 利用AOP记录用户操作日志
  * 
@@ -33,191 +32,168 @@ import com.taobao.diamond.server.utils.SessionHolder;
 @Aspect
 public class OperationLogAspect {
 
-    static final Log log = LogFactory.getLog("opLog");
-    static final Log updateLog = LogFactory.getLog("updateLog");
-    static final Log deleteLog = LogFactory.getLog("deleteLog");
+	static final Log log = LogFactory.getLog("opLog");
+	static final Log updateLog = LogFactory.getLog("updateLog");
+	static final Log deleteLog = LogFactory.getLog("deleteLog");
 
+	@Pointcut("execution(public * post* (..))")
+	public void post() {
 
-    @Pointcut("execution(public * post* (..))")
-    public void post() {
+	}
 
-    }
+	@Pointcut("execution(public * add* (..))")
+	public void add() {
 
+	}
 
-    @Pointcut("execution(public * add* (..))")
-    public void add() {
+	@Pointcut("execution(public * *upload (..))")
+	public void upload() {
 
-    }
+	}
 
+	@Pointcut("execution(public * delete* (..))")
+	public void delete() {
 
-    @Pointcut("execution(public * *upload (..))")
-    public void upload() {
+	}
 
-    }
+	@Pointcut("execution(public * update* (..))")
+	public void update() {
 
+	}
 
-    @Pointcut("execution(public * move* (..))")
-    public void move() {
+	@Pointcut("execution(public * reupload* (..))")
+	public void reupload() {
 
-    }
+	}
 
+	@Pointcut("execution(public * reload* (..))")
+	public void reload() {
 
-    @Pointcut("execution(public * delete* (..))")
-    public void delete() {
+	}
 
-    }
+	@Pointcut("execution(public * changePassword (..))")
+	public void changePassword() {
 
+	}
 
-    @Pointcut("execution(public * update* (..))")
-    public void update() {
+	@Pointcut("execution(public * setRefuseRequestCount (..))")
+	public void setRefuseRequestCount() {
 
-    }
+	}
 
+	@Pointcut("execution(* com.taobao.diamond.server.controller.AdminController.* (..))")
+	public void adminController() {
 
-    @Pointcut("execution(public * reupload* (..))")
-    public void reupload() {
+	}
 
-    }
+	@AfterReturning(pointcut = "(post() || add() || upload() ||  reload()  || changePassword() || setRefuseRequestCount() )"
+			+ " && ( adminController())")
+	public void logOperation(JoinPoint joinPoint) {
+		HttpSession session = SessionHolder.getSession();
+		if (session != null) {
+			String user = (String) session.getAttribute("user");
+			if (user != null) {
+				StringBuilder sb = new StringBuilder("用户:");
+				sb.append(user).append(",执行:")
+						.append(joinPoint.getSignature().getName())
+						.append("，参数为：[");
+				boolean wasFrist = true;
+				String userIp = null;
+				if (joinPoint.getArgs() != null) {
+					for (Object obj : joinPoint.getArgs()) {
+						if (obj instanceof HttpServletRequest) {
+							HttpServletRequest request = (HttpServletRequest) obj;
+							userIp = getRemoteIp(request);
+						}
 
+						if (wasFrist) {
+							sb.append(obj);
+							wasFrist = false;
+						} else {
+							sb.append(",").append(obj);
+						}
+					}
+				}
+				sb.append("]");
+				sb.append(", ip:" + userIp);
+				log.info(sb.toString());
+			}
+		}
+	}
 
-    @Pointcut("execution(public * reload* (..))")
-    public void reload() {
+	@AfterReturning(pointcut = "(update() || reupload()) && (adminController())")
+	public void logUpdateOperation(JoinPoint joinPoint) {
+		HttpSession session = SessionHolder.getSession();
+		if (session != null) {
+			String user = (String) session.getAttribute("user");
+			if (user != null) {
+				StringBuilder sb = new StringBuilder("用户:");
+				sb.append(user).append(",执行:")
+						.append(joinPoint.getSignature().getName())
+						.append("，参数为：[");
+				boolean wasFrist = true;
+				String userIp = null;
+				if (joinPoint.getArgs() != null) {
+					for (Object obj : joinPoint.getArgs()) {
+						if (obj instanceof HttpServletRequest) {
+							HttpServletRequest request = (HttpServletRequest) obj;
+							userIp = getRemoteIp(request);
+						}
 
-    }
+						if (wasFrist) {
+							sb.append(obj);
+							wasFrist = false;
+						} else {
+							sb.append(",").append(obj);
+						}
+					}
+				}
+				sb.append("]");
+				sb.append(", ip:" + userIp);
+				updateLog.warn(sb.toString());
+			}
+		}
+	}
 
+	@AfterReturning(pointcut = "(delete()) && (adminController())")
+	public void logDeleteOperation(JoinPoint joinPoint) {
+		HttpSession session = SessionHolder.getSession();
+		if (session != null) {
+			String user = (String) session.getAttribute("user");
+			if (user != null) {
+				StringBuilder sb = new StringBuilder("用户:");
+				sb.append(user).append(",执行:")
+						.append(joinPoint.getSignature().getName())
+						.append("，参数为：[");
+				boolean wasFrist = true;
+				String userIp = null;
+				if (joinPoint.getArgs() != null) {
+					for (Object obj : joinPoint.getArgs()) {
+						if (obj instanceof HttpServletRequest) {
+							HttpServletRequest request = (HttpServletRequest) obj;
+							userIp = getRemoteIp(request);
+						}
 
-    @Pointcut("execution(public * changePassword (..))")
-    public void changePassword() {
+						if (wasFrist) {
+							sb.append(obj);
+							wasFrist = false;
+						} else {
+							sb.append(",").append(obj);
+						}
+					}
+				}
+				sb.append("]");
+				sb.append(", ip:" + userIp);
+				deleteLog.warn(sb.toString());
+			}
+		}
+	}
 
-    }
-
-
-    @Pointcut("execution(public * setRefuseRequestCount (..))")
-    public void setRefuseRequestCount() {
-
-    }
-
-
-    @Pointcut("execution(* com.taobao.diamond.server.controller.AdminController.* (..))")
-    public void adminController() {
-
-    }
-
-
-    @Pointcut("execution(* com.taobao.diamond.server.controller.BaseStoneController.* (..))")
-    public void baseStoneController() {
-
-    }
-
-
-    @AfterReturning(pointcut = "(post() || add() || upload() ||  reload()  || changePassword() || setRefuseRequestCount() )"
-            + " && ( adminController() || baseStoneController())")
-    public void logOperation(JoinPoint joinPoint) {
-        HttpSession session = SessionHolder.getSession();
-        if (session != null) {
-            String user = (String) session.getAttribute("user");
-            if (user != null) {
-                StringBuilder sb = new StringBuilder("用户:");
-                sb.append(user).append(",执行:").append(joinPoint.getSignature().getName()).append("，参数为：[");
-                boolean wasFrist = true;
-                String userIp = null;
-                if (joinPoint.getArgs() != null) {
-                    for (Object obj : joinPoint.getArgs()) {
-                        if (obj instanceof HttpServletRequest) {
-                            HttpServletRequest request = (HttpServletRequest) obj;
-                            userIp = getRemoteIp(request);
-                        }
-
-                        if (wasFrist) {
-                            sb.append(obj);
-                            wasFrist = false;
-                        }
-                        else {
-                            sb.append(",").append(obj);
-                        }
-                    }
-                }
-                sb.append("]");
-                sb.append(", ip:" + userIp);
-                log.info(sb.toString());
-            }
-        }
-    }
-
-
-    @AfterReturning(pointcut = "(update() || reupload() || move()) && (adminController() || baseStoneController())")
-    public void logUpdateOperation(JoinPoint joinPoint) {
-        HttpSession session = SessionHolder.getSession();
-        if (session != null) {
-            String user = (String) session.getAttribute("user");
-            if (user != null) {
-                StringBuilder sb = new StringBuilder("用户:");
-                sb.append(user).append(",执行:").append(joinPoint.getSignature().getName()).append("，参数为：[");
-                boolean wasFrist = true;
-                String userIp = null;
-                if (joinPoint.getArgs() != null) {
-                    for (Object obj : joinPoint.getArgs()) {
-                        if (obj instanceof HttpServletRequest) {
-                            HttpServletRequest request = (HttpServletRequest) obj;
-                            userIp = getRemoteIp(request);
-                        }
-
-                        if (wasFrist) {
-                            sb.append(obj);
-                            wasFrist = false;
-                        }
-                        else {
-                            sb.append(",").append(obj);
-                        }
-                    }
-                }
-                sb.append("]");
-                sb.append(", ip:" + userIp);
-                updateLog.warn(sb.toString());
-            }
-        }
-    }
-
-
-    @AfterReturning(pointcut = "(delete()) && (adminController() || baseStoneController())")
-    public void logDeleteOperation(JoinPoint joinPoint) {
-        HttpSession session = SessionHolder.getSession();
-        if (session != null) {
-            String user = (String) session.getAttribute("user");
-            if (user != null) {
-                StringBuilder sb = new StringBuilder("用户:");
-                sb.append(user).append(",执行:").append(joinPoint.getSignature().getName()).append("，参数为：[");
-                boolean wasFrist = true;
-                String userIp = null;
-                if (joinPoint.getArgs() != null) {
-                    for (Object obj : joinPoint.getArgs()) {
-                        if (obj instanceof HttpServletRequest) {
-                            HttpServletRequest request = (HttpServletRequest) obj;
-                            userIp = getRemoteIp(request);
-                        }
-
-                        if (wasFrist) {
-                            sb.append(obj);
-                            wasFrist = false;
-                        }
-                        else {
-                            sb.append(",").append(obj);
-                        }
-                    }
-                }
-                sb.append("]");
-                sb.append(", ip:" + userIp);
-                deleteLog.warn(sb.toString());
-            }
-        }
-    }
-
-
-    private String getRemoteIp(HttpServletRequest request) {
-        String remoteIP = request.getHeader("X-Real-IP");
-        if (remoteIP == null || remoteIP.isEmpty()) {
-            remoteIP = request.getRemoteAddr();
-        }
-        return remoteIP;
-    }
+	private String getRemoteIp(HttpServletRequest request) {
+		String remoteIP = request.getHeader("X-Real-IP");
+		if (remoteIP == null || remoteIP.isEmpty()) {
+			remoteIP = request.getRemoteAddr();
+		}
+		return remoteIP;
+	}
 }
