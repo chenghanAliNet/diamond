@@ -16,8 +16,6 @@ import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RequestParam;
 
 import com.taobao.diamond.server.service.ConfigService;
-import com.taobao.diamond.server.service.GroupService;
-
 
 /**
  * 用于其他节点通知的控制器
@@ -28,61 +26,31 @@ import com.taobao.diamond.server.service.GroupService;
 @Controller
 @RequestMapping("/notify.do")
 public class NotifyController {
-    @Autowired
-    private GroupService groupService;
 
-    @Autowired
-    private ConfigService configService;
+	@Autowired
+	private ConfigService configService;
 
+	public ConfigService getConfigService() {
+		return configService;
+	}
 
-    public GroupService getGroupService() {
-        return groupService;
-    }
+	public void setConfigService(ConfigService configService) {
+		this.configService = configService;
+	}
 
-
-    public void setGroupService(GroupService groupService) {
-        this.groupService = groupService;
-    }
-
-
-    public ConfigService getConfigService() {
-        return configService;
-    }
-
-
-    public void setConfigService(ConfigService configService) {
-        this.configService = configService;
-    }
-
-
-    /**
-     * 通知分组信息改变，重新加载配置信息
-     * 
-     * @param request
-     * @param response
-     * @param dataId
-     * @param clientGroup
-     * @return
-     */
-    @RequestMapping(method = RequestMethod.GET, params = "method=notifyGroup")
-    public String notifyGroup() {
-        groupService.loadGroupInfo();
-        return "200";
-    }
-
-
-    /**
-     * 通知配置信息改变
-     * 
-     * @param id
-     * @return
-     */
-    @RequestMapping(method = RequestMethod.GET, params = "method=notifyConfigInfo")
-    public String notifyConfigInfo(@RequestParam("dataId") String dataId, @RequestParam("group") String group) {
-        dataId = dataId.trim();
-        group = group.trim();
-        this.configService.loadConfigInfoToDisk(dataId, group);
-        return "200";
-    }
+	/**
+	 * 通知配置信息改变
+	 * 
+	 * @param id
+	 * @return
+	 */
+	@RequestMapping(method = RequestMethod.GET, params = "method=notifyConfigInfo")
+	public String notifyConfigInfo(@RequestParam("dataId") String dataId,
+			@RequestParam("group") String group) {
+		dataId = dataId.trim();
+		group = group.trim();
+		this.configService.loadConfigInfoToDisk(dataId, group);
+		return "200";
+	}
 
 }

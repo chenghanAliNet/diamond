@@ -154,24 +154,6 @@ public class DiskServiceUnitTest {
     }
 
 
-    @Test
-    public void testSaveFile() throws Exception {
-        EasyMock.expect(servletContext.getRealPath("/")).andReturn(path).anyTimes();
-        mocksControl.replay();
-        this.diskService.saveFile("map-file.js", "{key:value}");
-        File file = new File(path + "/map-file.js");
-        assertTrue(file.exists());
-
-        BufferedReader reader = new BufferedReader(new InputStreamReader(new FileInputStream(file)));
-        String line = reader.readLine();
-        assertNotNull(line);
-        assertEquals("{key:value}", line);
-        reader.close();
-
-        file.delete();
-    }
-
-
     @After
     public void tearDown() throws IOException {
         tempFile.delete();

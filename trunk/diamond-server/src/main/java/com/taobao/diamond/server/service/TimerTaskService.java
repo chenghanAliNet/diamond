@@ -26,7 +26,6 @@ import java.util.concurrent.TimeUnit;
 
 import com.taobao.diamond.domain.ConfigInfo;
 import com.taobao.diamond.server.service.task.DumpConfigInfoTask;
-import com.taobao.diamond.server.service.task.LoadGroupInfoTask;
 import com.taobao.diamond.server.utils.SystemConfig;
 
 
@@ -87,9 +86,6 @@ public class TimerTaskService {
     private PersistService persistService;
     // @Autowired
     private DiskService diskService;
-
-    // @Autowired
-    private GroupService groupService;
 
     // /@Autowired
     private ConfigService configService;
@@ -181,10 +177,6 @@ public class TimerTaskService {
         configInfoTask.run();
         this.scheduledExecutorService.scheduleAtFixedRate(configInfoTask, SystemConfig.getDumpConfigInterval(),
             SystemConfig.getDumpConfigInterval(), TimeUnit.SECONDS);
-        LoadGroupInfoTask groupInfoTask = new LoadGroupInfoTask(this);
-        groupInfoTask.run();
-        this.scheduledExecutorService.scheduleAtFixedRate(groupInfoTask, SystemConfig.getLoadGroupInterval(),
-            SystemConfig.getLoadGroupInterval(), TimeUnit.SECONDS);
     }
 
 
@@ -197,8 +189,6 @@ public class TimerTaskService {
     private void initWithoutDB(List<ConfigInfo> configInfos) {
         DumpConfigInfoTask configInfoTask = new DumpConfigInfoTask(this, configInfos);
         configInfoTask.runFlyingMode();
-        LoadGroupInfoTask groupInfotask = new LoadGroupInfoTask(this);
-        groupInfotask.runFlyingMode();
     }
 
 
@@ -236,16 +226,6 @@ public class TimerTaskService {
 
     public DiskService getDiskService() {
         return diskService;
-    }
-
-
-    public void setGroupService(GroupService groupService) {
-        this.groupService = groupService;
-    }
-
-
-    public GroupService getGroupService() {
-        return groupService;
     }
 
 }
