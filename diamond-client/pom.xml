@@ -51,9 +51,5 @@
 			<groupId>commons-lang</groupId>
 			<artifactId>commons-lang</artifactId>
 		</dependency>
-		<dependency>
-			<groupId>com.taobao.pushit</groupId>
-			<artifactId>pushit</artifactId>			
-		</dependency>
 	</dependencies>
 </project>

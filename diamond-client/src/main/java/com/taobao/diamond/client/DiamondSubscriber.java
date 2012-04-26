@@ -13,7 +13,6 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import com.taobao.diamond.configinfo.CacheData;
-import com.taobao.pushit.client.PushitClient;
 
 
 /**
@@ -158,14 +157,6 @@ public interface DiamondSubscriber extends DiamondClientSub {
     public String getAvailableConfigureInfomationFromSnapshot(String dataId, String group, long timeout);
 
 
-    /**
-     * 获取实时通知 pushit客户端
-     * 
-     * @return
-     */
-    public PushitClient getPushitClient();
-    
-    
     /**
      * 判断某个dataId和group对应的数据在server中是否存在
      * @param dataId
