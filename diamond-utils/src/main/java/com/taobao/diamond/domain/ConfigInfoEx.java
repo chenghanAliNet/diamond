@@ -17,60 +17,45 @@ package com.taobao.diamond.domain;
  */
 public class ConfigInfoEx extends ConfigInfo {
 
-    private static final long serialVersionUID = -1L;
+	private static final long serialVersionUID = -1L;
 
-    private String oldMd5;
-    // 批量查询时, 单条数据的状态码, 具体的状态码在Constants.java中
-    private int status;
-    // 批量查询时, 单条数据的信息
-    private String message;
+	// 批量查询时, 单条数据的状态码, 具体的状态码在Constants.java中
+	private int status;
+	// 批量查询时, 单条数据的信息
+	private String message;
 
+	public ConfigInfoEx() {
+		super();
+	}
 
-    public ConfigInfoEx() {
-        super();
-    }
+	public ConfigInfoEx(String dataId, String group, String content) {
+		super(dataId, group, content);
+	}
 
+	public int getStatus() {
+		return status;
+	}
 
-    public ConfigInfoEx(String dataId, String group, String content) {
-        super(dataId, group, content);
-    }
+	public void setStatus(int status) {
+		this.status = status;
+	}
 
+	public String getMessage() {
+		return message;
+	}
 
-    public String getOldMd5() {
-        return oldMd5;
-    }
+	public void setMessage(String message) {
+		this.message = message;
+	}
 
-
-    public void setOldMd5(String oldMd5) {
-        this.oldMd5 = oldMd5;
-    }
-
-
-    public int getStatus() {
-        return status;
-    }
-
-
-    public void setStatus(int status) {
-        this.status = status;
-    }
-
-
-    public String getMessage() {
-        return message;
-    }
-
-
-    public void setMessage(String message) {
-        this.message = message;
-    }
-
-
-    @Override
-    public String toString() {
-        return "ConfigInfoEx dataId=" + super.getDataId() + ",group=" + super.getGroup() + ",content="
-                + super.getContent() + ",md5=" + super.getMd5() + ",oldMd5=" + oldMd5 + ",status=" + status
-                + ",message=" + message;
-    }
+	@Override
+	public String toString() {
+		return "ConfigInfoEx [status=" + status + ", message=" + message
+				+ ", getId()=" + getId() + ", getDataId()=" + getDataId()
+				+ ", getGroup()=" + getGroup() + ", getContent()="
+				+ getContent() + ", getMd5()=" + getMd5() + ", hashCode()="
+				+ hashCode() + ", toString()=" + super.toString()
+				+ ", getClass()=" + getClass() + "]";
+	}
 
 }
