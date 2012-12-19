@@ -50,7 +50,7 @@ public class PaginationHelper<E> {
      */
     public Page<E> fetchPage(final JdbcTemplate jt, final String sqlCountRows, final String sqlFetchRows,
             final Object args[], final int pageNo, final int pageSize, final ParameterizedRowMapper<E> rowMapper) {
-        if(pageSize == 0) {
+        if (pageSize == 0) {
             return null;
         }
 

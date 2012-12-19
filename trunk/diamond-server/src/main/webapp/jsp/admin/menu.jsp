@@ -8,7 +8,6 @@
 <body>
 <ul>
   <li><a href="config/list.jsp" target="rightFrame">配置信息管理</a></li>
-  <li><a href="<c:url value='/admin.do?method=listGroup'/>" target="rightFrame">分组管理</a></li>
   <li><a href="<c:url value='/admin.do?method=listUser'/>" target="rightFrame">权限管理</a></li>
   <li><a href="<c:url value='/admin.do?method=getRefuseRequestCount'/>" target="rightFrame">设置拒绝请求</a></li>
   <c:url var="logoutUrl" value="/login.do">

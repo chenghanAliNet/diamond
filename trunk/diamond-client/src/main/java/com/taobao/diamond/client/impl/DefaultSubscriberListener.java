@@ -1,17 +1,7 @@
-/*
- * (C) 2007-2012 Alibaba Group Holding Limited.
- * 
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- * Authors:
- *   leiwen <chrisredfield1985@126.com> , boyan <killme2008@gmail.com>
- */
 package com.taobao.diamond.client.impl;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -25,239 +15,154 @@ import com.taobao.diamond.client.SubscriberListener;
 import com.taobao.diamond.common.Constants;
 import com.taobao.diamond.configinfo.ConfigureInfomation;
 import com.taobao.diamond.manager.ManagerListener;
+import com.taobao.diamond.utils.LoggerInit;
 
+
+/**
+ * 业务监听器的聚集。
+ * 
+ * @author leiwen.zh
+ * 
+ */
 public class DefaultSubscriberListener implements SubscriberListener {
-	private static final Log log = LogFactory
-			.getLog(DefaultDiamondSubscriber.class);
 
-	private static final long ACK_TIME_OUT = 10000;
+    // 回调日志单独记录
+    private static final Log dataLog = LogFactory.getLog(LoggerInit.LOG_NAME_CONFIG_DATA);
 
-	private final ConcurrentMap<String/* dataId + group */, ConcurrentMap<String/* instanceId */, CopyOnWriteArrayList<ManagerListener>>> allListeners = new ConcurrentHashMap<String, ConcurrentMap<String, CopyOnWriteArrayList<ManagerListener>>>();
+    private final ConcurrentMap<String/* dataId + group */, CopyOnWriteArrayList<ManagerListener>/* listeners */> allListeners =
+            new ConcurrentHashMap<String, CopyOnWriteArrayList<ManagerListener>>();
 
-	private DefaultDiamondSubscriber diamondSubscriber;
 
-	private RotateType rotateType = RotateType.SERVER;
+    public Executor getExecutor() {
+        return null;
+    }
 
-	public Executor getExecutor() {
-		return null;
-	}
 
-	public void setDiamondSubscriber(DefaultDiamondSubscriber diamondSubscriber) {
-		this.diamondSubscriber = diamondSubscriber;
-	}
+    public void receiveConfigInfo(final ConfigureInfomation configureInfomation) {
+        String dataId = configureInfomation.getDataId();
+        String group = configureInfomation.getGroup();
+        if (null == dataId) {
+            dataLog.error("[receiveConfigInfo] dataId is null");
+            return;
+        }
 
-	void setRotateType(RotateType rotateType) {
-		this.rotateType = rotateType;
-	}
+        String key = makeKey(dataId, group);
+        CopyOnWriteArrayList<ManagerListener> listeners = allListeners.get(key);
+        if (listeners == null || listeners.isEmpty()) {
+            dataLog.warn("[notify-listener] no listener for dataId=" + dataId + ", group=" + group);
+            return;
+        }
 
-	public void receiveConfigInfo(final ConfigureInfomation configureInfomation) {
-		String dataId = configureInfomation.getDataId();
-		String group = configureInfomation.getGroup();
-		if (null == dataId) {
-			log.error("服务器端返回了空的DataID");
-		} else {
-			String key = makeKey(dataId, group);
-			Map<String, CopyOnWriteArrayList<ManagerListener>> map = allListeners
-					.get(key);
-			if (null == map) {
-				log.warn("客户没有设置MessageListener");
-			} else if (map.size() == 0) {
-				log.warn("客户没有设置MessageListener");
-				allListeners.remove(key);
-			} else {
-				for (List<ManagerListener> listeners : map.values()) {
-					for (ManagerListener listener : listeners) {
-						callListener(configureInfomation, listener);
-					}
-				}
-			}
-		}
-	}
+        for (ManagerListener listener : listeners) {
+            try {
+                notifyListener(configureInfomation, listener);
+            }
+            catch (Throwable t) {
+                dataLog.error("call listener error, dataId=" + dataId + ", group=" + group, t);
+            }
+        }
+    }
 
-	private void callListener(final ConfigureInfomation configureInfomation,
-			final ManagerListener listener) {
-		// 如果listener为null，记录日志，不影响客户端的正常使用，同步获取数据依然能够成功
-		if (listener == null) {
-			log.warn("监听器为空警告：客户端在创建DiamondManager时没有指定监听器");
-			return;
-		}
 
-		if (null != listener.getExecutor()) {
-			listener.getExecutor().execute(new Runnable() {
-				public void run() {
-					String listenerName = listener.getClass().getName();
-					try {
-						listener.receiveConfigInfo(configureInfomation
-								.getConfigureInfomation());
-						// 客户端正确处理了接收到的数据，记录日志 by leiwen
-						log.info("客户端正确处理了接收到的数据: " + "listener="
-								+ listener.getClass().getName() + " & dataId="
-								+ configureInfomation.getDataId() + " & group="
-								+ configureInfomation.getGroup()
-								+ " & configInfo="
-								+ configureInfomation.getConfigureInfomation()
-								+ " & type=" + rotateType);
-						// 向server发送处理结果
-						diamondSubscriber.sendAckToServer(
-								configureInfomation.getDataId(),
-								configureInfomation.getGroup(),
-								Constants.STAT_CLIENT_SUCCESS, listenerName,
-								rotateType, ACK_TIME_OUT);
-					} catch (Throwable t) {
-						// 客户端处理接收到的数据时发生异常，记录日志 by leiwen
-						log.error(
-								"客户端MessageListener中抛异常，请客户自查："
-										+ "listener="
-										+ listener.getClass().getName()
-										+ " & dataId="
-										+ configureInfomation.getDataId()
-										+ " & group="
-										+ configureInfomation.getGroup()
-										+ " & configInfo="
-										+ configureInfomation
-												.getConfigureInfomation()
-										+ " & type=" + rotateType, t);
-						// 向server发送处理结果
-						diamondSubscriber.sendAckToServer(
-								configureInfomation.getDataId(),
-								configureInfomation.getGroup(),
-								Constants.STAT_CLIENT_FAILURE, listenerName,
-								rotateType, ACK_TIME_OUT);
-					}
-				}
-			});
-		} else {
-			String listenerName = listener.getClass().getName();
-			try {
-				listener.receiveConfigInfo(configureInfomation
-						.getConfigureInfomation());
-				// 客户端正确处理了接收到的数据，记录日志 by leiwen
-				log.info("客户端正确处理了接收到的数据: " + "listener="
-						+ listener.getClass().getName() + " & dataId="
-						+ configureInfomation.getDataId() + " & group="
-						+ configureInfomation.getGroup() + " & configInfo="
-						+ configureInfomation.getConfigureInfomation()
-						+ " & type=" + rotateType);
-				// 向server发送处理结果
-				diamondSubscriber.sendAckToServer(
-						configureInfomation.getDataId(),
-						configureInfomation.getGroup(),
-						Constants.STAT_CLIENT_SUCCESS, listenerName,
-						rotateType, ACK_TIME_OUT);
-			} catch (Throwable t) {
-				// 客户端处理接收到的数据时发生异常，记录日志 by leiwen
-				log.error("客户端MessageListener中抛异常，请客户自查：" + "listener="
-						+ listener.getClass().getName() + " & dataId="
-						+ configureInfomation.getDataId() + " & group="
-						+ configureInfomation.getGroup() + " & configInfo="
-						+ configureInfomation.getConfigureInfomation()
-						+ " & type=" + rotateType, t);
-				// 向server发送处理结果
-				diamondSubscriber.sendAckToServer(
-						configureInfomation.getDataId(),
-						configureInfomation.getGroup(),
-						Constants.STAT_CLIENT_FAILURE, listenerName,
-						rotateType, ACK_TIME_OUT);
-			}
-		}
-	}
+    private void notifyListener(final ConfigureInfomation configureInfomation, final ManagerListener listener) {
+        if (listener == null) {
+            return;
+        }
 
-	/**
-	 * 添加一个DataID对应的ManagerListener
-	 * 
-	 * @param dataId
-	 * @param listener
-	 */
-	public void addManagerListener(String dataId, String group,
-			String instanceId, ManagerListener listener) {
-		List<ManagerListener> list = new ArrayList<ManagerListener>();
-		list.add(listener);
-		addManagerListeners(dataId, group, instanceId, list);
-	}
+        final String dataId = configureInfomation.getDataId();
+        final String group = configureInfomation.getGroup();
+        final String content = configureInfomation.getConfigureInfomation();
 
-	public List<ManagerListener> getManagerListenerList(String dataId,
-			String group, String instanceId) {
-		if (null == dataId || null == instanceId) {
-			return null;
-		}
+        dataLog.info("[notify-listener] call listener " + listener.getClass().getName() + ", for " + dataId + ", "
+                + group + ", " + content);
 
-		List<ManagerListener> ret = null;
+        Runnable job = new Runnable() {
+            public void run() {
+                try {
+                    listener.receiveConfigInfo(content);
+                }
+                catch (Throwable t) {
+                    dataLog.error(t.getMessage(), t);
+                }
+            }
+        };
 
-		String key = makeKey(dataId, group);
-		ConcurrentMap<String, CopyOnWriteArrayList<ManagerListener>> map = allListeners
-				.get(key);
-		if (map != null) {
-			ret = map.get(instanceId);
-			if (ret != null) {
-				ret = new ArrayList<ManagerListener>(ret);
-			}
-		}
-		return ret;
-	}
+        if (null != listener.getExecutor()) {
+            listener.getExecutor().execute(job);
+        }
+        else {
+            job.run();
+        }
+    }
 
-	/**
-	 * 删除一个DataID对应的所有的ManagerListeners
-	 * 
-	 * @param dataId
-	 */
-	public void removeManagerListeners(String dataId, String group,
-			String instanceId) {
-		if (null == dataId || null == instanceId) {
-			return;
-		}
-		String key = makeKey(dataId, group);
-		ConcurrentMap<String, CopyOnWriteArrayList<ManagerListener>> map = allListeners
-				.get(key);
-		if (map != null) {
-			map.remove(instanceId);
-		}
-	}
 
-	/**
-	 * 添加一个DataID对应的一些ManagerListener
-	 * 
-	 * @param dataId
-	 * @param addListeners
-	 */
-	public void addManagerListeners(String dataId, String group,
-			String instanceId, List<ManagerListener> addListeners) {
-		if (null == dataId || null == addListeners || null == instanceId) {
-			return;
-		}
-		if (addListeners.size() == 0) {
-			return;
-		}
+    /**
+     * 添加一个DataID对应的ManagerListener
+     */
+    public void addManagerListener(String dataId, String group, ManagerListener listener) {
+        List<ManagerListener> list = new ArrayList<ManagerListener>();
+        list.add(listener);
+        addManagerListeners(dataId, group, list);
+    }
 
-		String key = makeKey(dataId, group);
-		ConcurrentMap<String, CopyOnWriteArrayList<ManagerListener>> map = allListeners
-				.get(key);
-		if (map == null) {
-			map = new ConcurrentHashMap<String, CopyOnWriteArrayList<ManagerListener>>();
-			ConcurrentMap<String, CopyOnWriteArrayList<ManagerListener>> oldMap = allListeners
-					.putIfAbsent(key, map);
-			if (oldMap != null) {
-				map = oldMap;
-			}
-		}
 
-		CopyOnWriteArrayList<ManagerListener> listenerList = map
-				.get(instanceId);
-		if (listenerList == null) {
-			listenerList = new CopyOnWriteArrayList<ManagerListener>();
-			CopyOnWriteArrayList<ManagerListener> oldList = map.putIfAbsent(
-					instanceId, listenerList);
-			if (oldList != null) {
-				listenerList = oldList;
-			}
-		}
-		listenerList.addAll(addListeners);
-	}
+    public List<ManagerListener> getManagerListenerList(String dataId, String group) {
+        if (null == dataId) {
+            return null;
+        }
 
-	private String makeKey(String dataId, String group) {
-		if (StringUtils.isEmpty(group)) {
-			group = Constants.DEFAULT_GROUP;
-		}
-		return dataId + "_" + group;
-	}
+        String key = makeKey(dataId, group);
+        return new ArrayList<ManagerListener>(allListeners.get(key));
+    }
+
+
+    /**
+     * 删除一个DataID对应的所有的ManagerListeners
+     * 
+     * @param dataId
+     */
+    public void removeManagerListeners(String dataId, String group) {
+        if (null == dataId) {
+            return;
+        }
+
+        String key = makeKey(dataId, group);
+        allListeners.remove(key);
+    }
+
+
+    /**
+     * 添加一个DataID对应的一些ManagerListener
+     * 
+     * @param dataId
+     * @param addListeners
+     */
+    public void addManagerListeners(String dataId, String group, List<ManagerListener> addListeners) {
+        if (null == dataId || null == addListeners) {
+            return;
+        }
+        if (addListeners.size() == 0) {
+            return;
+        }
+
+        String key = makeKey(dataId, group);
+        CopyOnWriteArrayList<ManagerListener> listenerList = allListeners.get(key);
+        if (listenerList == null) {
+            listenerList = new CopyOnWriteArrayList<ManagerListener>();
+            CopyOnWriteArrayList<ManagerListener> oldList = allListeners.putIfAbsent(key, listenerList);
+            if (oldList != null) {
+                listenerList = oldList;
+            }
+        }
+        listenerList.addAll(addListeners);
+    }
+
+
+    private String makeKey(String dataId, String group) {
+        if (StringUtils.isBlank(group)) {
+            group = Constants.DEFAULT_GROUP;
+        }
+        return dataId + "_" + group;
+    }
 
 }

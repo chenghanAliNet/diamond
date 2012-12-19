@@ -14,7 +14,6 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.taobao.diamond.client.jmx.DiamondClientUtil;
 import com.taobao.diamond.common.Constants;
 import com.taobao.diamond.mockserver.MockServer;
 
@@ -32,12 +31,8 @@ public class DiamondConfigure {
     private volatile int receiveWaitTime = Constants.RECV_WAIT_TIMEOUT;// 同步查询一个DataID所花费的时间
 
     private volatile List<String> domainNameList = new LinkedList<String>();
-    // pushit服务端地址列表
-    private volatile List<String> pushitDomainNameList = new LinkedList<String>();
 
     private volatile boolean useFlowControl = true;
-
-    private volatile int flowControlThreshold = Constants.FLOW_CONTROL_THRESHOLD;
 
     private boolean localFirst = false;
 
@@ -57,19 +52,15 @@ public class DiamondConfigure {
     // 本地数据保存路径
     private String filePath;
 
-    private String clusterType;
 
-    public DiamondConfigure(String clusterType) {
-        this.clusterType = clusterType;
-        
-        filePath = System.getProperty("user.home") + "/diamond/" + clusterType;
+    public DiamondConfigure() {
+        filePath = System.getProperty("user.home") + "/diamond";
         File dir = new File(filePath);
         dir.mkdirs();
 
         if (!dir.exists()) {
             throw new RuntimeException("创建diamond目录失败：" + filePath);
         }
-
     }
 
 
@@ -182,7 +173,6 @@ public class DiamondConfigure {
             throw new NullPointerException();
         }
         this.domainNameList = new LinkedList<String>(domainNameList);
-        DiamondClientUtil.setServerAddrs(this.clusterType, domainNameList);
     }
 
 
@@ -196,7 +186,6 @@ public class DiamondConfigure {
             throw new NullPointerException();
         }
         this.domainNameList.add(domainName);
-        DiamondClientUtil.addServerAddr(clusterType, domainName);
     }
 
 
@@ -210,35 +199,6 @@ public class DiamondConfigure {
             throw new NullPointerException();
         }
         this.domainNameList.addAll(domainNameList);
-    }
-
-
-    public List<String> getPushitDomainNameList() {
-        return pushitDomainNameList;
-    }
-
-
-    public void setPushitDomainNameList(List<String> pushitDomainNameList) {
-        if (null == pushitDomainNameList) {
-            throw new NullPointerException();
-        }
-        this.pushitDomainNameList = pushitDomainNameList;
-    }
-
-
-    public void addPushitDomainName(String domainName) {
-        if (null == domainName) {
-            throw new NullPointerException();
-        }
-        this.pushitDomainNameList.add(domainName);
-    }
-
-
-    public void addPushitDomainNames(Collection<String> domainNames) {
-        if (null == domainNames) {
-            throw new NullPointerException();
-        }
-        this.pushitDomainNameList.addAll(domainNames);
     }
 
 
@@ -392,16 +352,6 @@ public class DiamondConfigure {
     }
 
 
-    public int getFlowControlThreshold() {
-        return flowControlThreshold;
-    }
-
-
-    public void setFlowControlThreshold(int flowControlThreshold) {
-        this.flowControlThreshold = flowControlThreshold;
-    }
-
-
     public String getConfigServerAddress() {
         return configServerAddress;
     }
@@ -441,7 +391,4 @@ public class DiamondConfigure {
         this.localFirst = localFirst;
     }
 
-    public String getClusterType() {
-        return clusterType;
-    }
 }

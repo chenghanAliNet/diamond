@@ -156,12 +156,4 @@ public interface DiamondSubscriber extends DiamondClientSub {
      */
     public String getAvailableConfigureInfomationFromSnapshot(String dataId, String group, long timeout);
 
-
-    /**
-     * 判断某个dataId和group对应的数据在server中是否存在
-     * @param dataId
-     * @param group
-     * @return
-     */
-    public boolean exists(String dataId, String group);
 }
