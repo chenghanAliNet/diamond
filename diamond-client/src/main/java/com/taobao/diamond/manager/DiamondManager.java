@@ -11,7 +11,6 @@ package com.taobao.diamond.manager;
 
 import java.util.List;
 import java.util.Properties;
-import java.util.Set;
 
 import com.taobao.diamond.client.DiamondConfigure;
 
@@ -70,16 +69,17 @@ public interface DiamondManager {
      * @return
      */
     public String getAvailableConfigureInfomation(long timeout);
-    
-    
+
+
     /**
      * 同步获取一份有效的配置信息，按照<strong>上一次正确配置的snapshot->本地文件->diamond服务器</strong>
      * 的优先顺序获取， 如果这些途径都无效，则返回null
-     * @param timeout 从网络获取配置信息的超时，单位毫秒
+     * 
+     * @param timeout
+     *            从网络获取配置信息的超时，单位毫秒
      * @return
      */
-    
-    
+
     public String getAvailableConfigureInfomationFromSnapshot(long timeout);
 
 
@@ -91,10 +91,11 @@ public interface DiamondManager {
      * @return
      */
     public Properties getPropertiesConfigureInfomation(long timeout);
-    
-    
+
+
     /**
      * 同步获取Properties格式的配置信息，本地snapshot优先
+     * 
      * @param timeout
      * @return
      */
@@ -132,26 +133,5 @@ public interface DiamondManager {
      * 关闭这个DiamondManager
      */
     public void close();
-
-
-    /**
-     * 获取当前正在使用的服务器列表
-     */
-    public List<String> getServerAddress();
-
-
-    /**
-     * 获取注册监听的所有dataId
-     */
-    public Set<String> getAllDataId();
-    
-    
-    /**
-     * 判断某个dataId和group对应的数据在server中是否存在
-     * @param dataId
-     * @param group
-     * @return
-     */
-    public boolean exists(String dataId, String group);
 
 }

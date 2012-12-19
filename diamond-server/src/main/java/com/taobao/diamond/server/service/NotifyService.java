@@ -18,8 +18,11 @@ import java.net.URL;
 import java.util.Enumeration;
 import java.util.Properties;
 
+import javax.annotation.PostConstruct;
+
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 
 import com.taobao.diamond.server.utils.SystemConfig;
@@ -32,7 +35,7 @@ import com.taobao.diamond.utils.ResourceUtils;
  * @author boyan
  * @date 2010-5-6
  */
-//@Service
+@Service
 public class NotifyService {
     private static final int TIMEOUT = 5000;
 
@@ -50,7 +53,7 @@ public class NotifyService {
     }
 
 
-    //@PostConstruct
+    @PostConstruct
     public void loadNodes() {
         InputStream in = null;
         try {
@@ -61,7 +64,6 @@ public class NotifyService {
             log.error("加载节点配置文件失败");
         }
         finally {
-
             try {
                 if (in != null)
                     in.close();
@@ -71,32 +73,6 @@ public class NotifyService {
             }
         }
         log.info("节点列表:" + nodeProperties);
-
-    }
-
-
-    /**
-     * 通知分组信息改变
-     */
-    public void notifyGroupChanged() {
-        Enumeration<?> enu = nodeProperties.propertyNames();
-        while (enu.hasMoreElements()) {
-            String address = (String) enu.nextElement();
-            String urlString = generateNotifyGroupChangedPath(address);
-            final String result = invokeURL(urlString);
-            log.info("通知节点" + address + "分组信息改变：" + result);
-        }
-    }
-
-
-    String generateNotifyGroupChangedPath(String address) {
-        String specialUrl = this.nodeProperties.getProperty(address);
-        String urlString = PROTOCOL + address + URL_PREFIX;
-        // 如果有指定url，使用指定的url
-        if (specialUrl!=null&&StringUtils.hasLength(specialUrl.trim())) {
-            urlString = specialUrl;
-        }
-        return urlString + "?method=notifyGroup";
     }
 
 
@@ -109,7 +85,7 @@ public class NotifyService {
         Enumeration<?> enu = nodeProperties.propertyNames();
         while (enu.hasMoreElements()) {
             String address = (String) enu.nextElement();
-            if ( address.contains(SystemConfig.LOCAL_IP) ) {
+            if (address.contains(SystemConfig.LOCAL_IP)) {
                 continue;
             }
             String urlString = generateNotifyConfigInfoPath(dataId, group, address);
@@ -123,43 +99,11 @@ public class NotifyService {
         String specialUrl = this.nodeProperties.getProperty(address);
         String urlString = PROTOCOL + address + URL_PREFIX;
         // 如果有指定url，使用指定的url
-        if (specialUrl!=null&&StringUtils.hasLength(specialUrl.trim())) {
+        if (specialUrl != null && StringUtils.hasLength(specialUrl.trim())) {
             urlString = specialUrl;
         }
         urlString += "?method=notifyConfigInfo&dataId=" + dataId + "&group=" + group;
         return urlString;
-    }
-    
-    
-    /**
-     * 通知发布者缓存改变
-     * @param dataId
-     * @param group
-     * @param identity
-     */
-    public void notifyPubCacheChange(String dataId, String group, String identity) {
-        Enumeration<?> enu = nodeProperties.propertyNames();
-        while (enu.hasMoreElements()) {
-            String address = (String) enu.nextElement();
-            if ( address.contains(SystemConfig.LOCAL_IP) ) {
-                continue;
-            }
-            String urlString = generateNotifyPubCachePath(dataId, group, identity, address);
-            final String result = invokeURL(urlString);
-            log.info("通知节点" + address + "发布者缓存改变：" + result);
-        }
-    }
-    
-    
-    String generateNotifyPubCachePath(String dataId, String group, String identity, String address) {
-        StringBuilder result = new StringBuilder();
-        result.append(PROTOCOL).append(address).append(URL_PREFIX);
-        result.append("?method=notifyPubCache");
-        result.append("&dataId=").append(dataId);
-        result.append("&group=").append(group);
-        result.append("&identity=").append(identity);
-        
-        return result.toString();
     }
 
 
@@ -197,7 +141,6 @@ public class NotifyService {
 
         }
         catch (Exception e) {
-            // TODO 失败类型
             log.error("http调用失败,url=" + urlString, e);
         }
         finally {

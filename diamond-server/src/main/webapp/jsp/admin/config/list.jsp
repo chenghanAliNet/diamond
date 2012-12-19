@@ -72,7 +72,7 @@
                    <c:param name="group" value="${configInfo.group}" />
                   <c:param name="dataId" value="${configInfo.dataId}" />
               </c:url>
-              <c:url var="previewUrl" value="/config.do" >
+              <c:url var="previewUrl" value="/config.co" >
                   <c:param name="group" value="${configInfo.group}" />
                   <c:param name="dataId" value="${configInfo.dataId}" />
               </c:url>

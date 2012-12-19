@@ -11,9 +11,6 @@ package com.taobao.diamond.client.processor;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.NetworkInterface;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -33,63 +30,16 @@ import com.taobao.diamond.io.watch.WatchEvent;
 import com.taobao.diamond.io.watch.WatchKey;
 import com.taobao.diamond.io.watch.WatchService;
 import com.taobao.diamond.utils.FileUtils;
-import com.taobao.diamond.utils.JSONUtils;
 
 
 public class LocalConfigInfoProcessor {
     private static final Log log = LogFactory.getLog(LocalConfigInfoProcessor.class);
     private ScheduledExecutorService singleExecutor = Executors.newSingleThreadScheduledExecutor();;
 
-    private volatile Map<String/* address */, Map<String/* dataId */, String/* group */>> localMap = null;
-
     private final Map<String/* filePath */, Long/* version */> existFiles = new HashMap<String, Long>();
 
     private volatile boolean isRun;
-    private final String localAddress = getHostAddress();
     private String rootPath = null;
-
-
-    static String getHostAddress() {
-        String address = "127.0.0.1";
-        try {
-            Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces();
-            while (en.hasMoreElements()) {
-                NetworkInterface ni = en.nextElement();
-                Enumeration<InetAddress> ads = ni.getInetAddresses();
-                while (ads.hasMoreElements()) {
-                    InetAddress ip = ads.nextElement();
-                    if (!ip.isLoopbackAddress() && ip.isSiteLocalAddress()) {
-                        return ip.getHostAddress();
-                    }
-                }
-            }
-        }
-        catch (Exception e) {
-            throw new RuntimeException("获取主机地址失败", e);
-        }
-        return address;
-    }
-
-
-    boolean containThisHostConfig() {
-        if (null == localMap) {
-            return false;
-        }
-        return localMap.containsKey(this.localAddress);
-    }
-
-
-    boolean isQualified(String dataId, String group) {
-        Map<String, String> map2 = localMap.get(this.localAddress);
-        if (null == map2) {
-            throw new RuntimeException("验证本地配置信息文件资质错误");
-        }
-        String qualifiedGroup = map2.get(dataId);
-        if (group.equals(qualifiedGroup)) {
-            return true;
-        }
-        return false;
-    }
 
 
     /**
@@ -102,18 +52,7 @@ public class LocalConfigInfoProcessor {
      * @throws IOException
      */
     public String getLocalConfigureInfomation(CacheData cacheData, boolean force) throws IOException {
-        if (null == localMap) {
-            if (cacheData.isUseLocalConfigInfo()) {
-                cacheData.setLastModifiedHeader(Constants.NULL);
-                cacheData.setMd5(Constants.NULL);
-                cacheData.setLocalConfigInfoFile(null);
-                cacheData.setLocalConfigInfoVersion(0L);
-                cacheData.setUseLocalConfigInfo(false);
-            }
-            return null;
-        }
-        String realGroup = getGroupByAddress(cacheData.getDataId(), cacheData.getGroup());
-        String filePath = getFilePath(cacheData.getDataId(), realGroup);
+        String filePath = getFilePath(cacheData.getDataId(), cacheData.getGroup());
         if (!existFiles.containsKey(filePath)) {
             if (cacheData.isUseLocalConfigInfo()) {
                 cacheData.setLastModifiedHeader(Constants.NULL);
@@ -125,8 +64,8 @@ public class LocalConfigInfoProcessor {
             return null;
         }
         if (force) {
-        	log.info("主动从本地获取配置数据, dataId:" + cacheData.getDataId() + ", group:" + cacheData.getGroup());
-        	
+            log.info("主动从本地获取配置数据, dataId:" + cacheData.getDataId() + ", group:" + cacheData.getGroup());
+
             String content = FileUtils.getFileContent(filePath);
             return content;
         }
@@ -137,64 +76,22 @@ public class LocalConfigInfoProcessor {
             cacheData.setLocalConfigInfoFile(filePath);
             cacheData.setLocalConfigInfoVersion(existFiles.get(filePath));
             cacheData.setUseLocalConfigInfo(true);
-            
+
             if (log.isInfoEnabled()) {
                 log.info("本地配置数据发生变化, dataId:" + cacheData.getDataId() + ", group:" + cacheData.getGroup());
             }
-            
+
             return content;
         }
         else {
             cacheData.setUseLocalConfigInfo(true);
-            
+
             if (log.isInfoEnabled()) {
-            	log.debug("本地配置数据没有发生变化, dataId:" + cacheData.getDataId() + ", group:" + cacheData.getGroup());
+                log.debug("本地配置数据没有发生变化, dataId:" + cacheData.getDataId() + ", group:" + cacheData.getGroup());
             }
-            
+
             return null;
         }
-    }
-
-
-    public boolean containsNewLocalConfigureInfomation(CacheData cacheData) {
-        if (null == localMap) {
-            return false;
-        }
-        String realGroup = getGroupByAddress(cacheData.getDataId(), cacheData.getGroup());
-        String filePath = getFilePath(cacheData.getDataId(), realGroup);
-        if (!existFiles.containsKey(filePath)) {
-            return false;
-        }
-        if (!filePath.equals(cacheData.getLocalConfigInfoFile())
-                || existFiles.get(filePath) != cacheData.getLocalConfigInfoVersion()) {
-            return true;
-        }
-        return false;
-    }
-
-
-    String getGroupByAddress(String dataId, String clientGroup) {
-        Map<String, String> mappingGroups = localMap.get(this.localAddress);
-        if (mappingGroups != null) {
-            String mappingGroup = mappingGroups.get(dataId);
-            if (mappingGroup != null) {
-                return mappingGroup;
-            }
-            else {
-                return defaultGroupOrClientGroup(clientGroup);
-            }
-        }
-        else {
-            return defaultGroupOrClientGroup(clientGroup);
-        }
-    }
-
-
-    String defaultGroupOrClientGroup(String clientGroup) {
-        if (clientGroup != null)
-            return clientGroup;
-        else
-            return Constants.DEFAULT_GROUP;
     }
 
 
@@ -293,7 +190,7 @@ public class LocalConfigInfoProcessor {
      * @param key
      * @return
      */
-    @SuppressWarnings( { "unchecked" })
+    @SuppressWarnings({ "unchecked" })
     private boolean processEvents(WatchKey key) {
         /**
          * 获取事件集合
@@ -316,31 +213,13 @@ public class LocalConfigInfoProcessor {
                 catch (Exception e1) {
 
                 }
-                if (!Constants.BASE_DIR.equals(grandpaDir) && Constants.MAP_FILE.equals(eventPath.getName())) {
-                    try {
-                        localMap =
-                                (Map<String, Map<String, String>>) JSONUtils.deserializeObject(FileUtils
-                                    .getFileContent(realPath), Map.class);
-                    }
-                    catch (Exception e) {
-                        log.error("JSON反序列化失败" + realPath, e);
-                        localMap = null;
-                        continue;
-                    }
-                    if (log.isInfoEnabled()) {
-                        log.info(Constants.MAP_FILE + "文件改变");
-                        log.info("MapFile关于本机的部分为：" + localMap.get(localAddress));
-                    }
+                if (!Constants.BASE_DIR.equals(grandpaDir)) {
+                    log.error("无效的文件进入监控目录: " + realPath);
+                    continue;
                 }
-                else {
-                    if (!Constants.BASE_DIR.equals(grandpaDir)) {
-                        log.error("无效的文件进入监控目录: " + realPath);
-                        continue;
-                    }
-                    existFiles.put(realPath, System.currentTimeMillis());
-                    if (log.isInfoEnabled()) {
-                        log.info(realPath + "文件被添加或更新");
-                    }
+                existFiles.put(realPath, System.currentTimeMillis());
+                if (log.isInfoEnabled()) {
+                    log.info(realPath + "文件被添加或更新");
                 }
             }
             else if (ev.kind() == StandardWatchEventKind.ENTRY_DELETE) {
@@ -351,35 +230,23 @@ public class LocalConfigInfoProcessor {
                 catch (Exception e1) {
 
                 }
-                if (!Constants.BASE_DIR.equals(grandpaDir) && Constants.MAP_FILE.equals(eventPath.getName())) {
-                    /**
-                     * 当Constants.MAP_FILE文件被删除时，删除localMap的映射文件,
-                     */
-                    localMap = null;
+                if (Constants.BASE_DIR.equals(grandpaDir)) {
+                    // 删除的是文件
+                    existFiles.remove(realPath);
                     if (log.isInfoEnabled()) {
-                        log.info(Constants.MAP_FILE + "文件被删除");
+                        log.info(realPath + "文件被被删除");
                     }
                 }
                 else {
-                    if (Constants.BASE_DIR.equals(grandpaDir)) {
-                        // 删除的是文件
-                        existFiles.remove(realPath);
-                        if (log.isInfoEnabled()) {
-                            log.info(realPath + "文件被被删除");
-                        }
-                    }
-                    else {
-                        // 删除的是目录
-                        Set<String> keySet = new HashSet<String>(existFiles.keySet());
-                        for (String filePath : keySet) {
-                            if (filePath.startsWith(realPath)) {
-                                existFiles.remove(filePath);
-                                if (log.isInfoEnabled()) {
-                                    log.info(filePath + "文件被删除");
-                                }
+                    // 删除的是目录
+                    Set<String> keySet = new HashSet<String>(existFiles.keySet());
+                    for (String filePath : keySet) {
+                        if (filePath.startsWith(realPath)) {
+                            existFiles.remove(filePath);
+                            if (log.isInfoEnabled()) {
+                                log.info(filePath + "文件被删除");
                             }
                         }
-
                     }
 
                 }
