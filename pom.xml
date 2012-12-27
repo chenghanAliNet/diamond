@@ -14,6 +14,7 @@
 
 	<modules>
 		<module>diamond-client</module>
+		<module>diamond-sdk</module>
 		<module>diamond-server</module>
 		<module>diamond-utils</module>
 	</modules>
@@ -150,6 +151,17 @@
 				<groupId>commons-lang</groupId>
 				<artifactId>commons-lang</artifactId>
 				<version>2.6</version>
+			</dependency>
+
+			<dependency>
+				<groupId>org.codehaus.jackson</groupId>
+				<artifactId>jackson-core-lgpl</artifactId>
+				<version>1.4.0</version>
+			</dependency>
+			<dependency>
+				<groupId>org.codehaus.jackson</groupId>
+				<artifactId>jackson-mapper-lgpl</artifactId>
+				<version>1.4.0</version>
 			</dependency>
 			
 			<dependency>

@@ -68,5 +68,19 @@ public class Constants {
     public static final String DEFAULT_USERNAME = "xxx";
 
     public static final String DEFAULT_PASSWORD = "xxx";
+    
+    /*
+     * 批量操作时, 单条数据的状态码
+     */
+    // 发生异常
+    public static final int BATCH_OP_ERROR = -1;
+    // 查询成功, 数据存在
+    public static final int BATCH_QUERY_EXISTS = 1;
+    // 查询成功, 数据不存在
+    public static final int BATCH_QUERY_NONEXISTS = 2;
+    // 新增成功
+    public static final int BATCH_ADD_SUCCESS = 3;
+    // 更新成功
+    public static final int BATCH_UPDATE_SUCCESS = 4;
 
 }
